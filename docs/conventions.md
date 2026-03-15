@@ -142,3 +142,27 @@ This keeps behavior and presentation aligned without giant inline strings.
 - Focus-visible styles present on controls
 - Class order is consistent and readable
 - Extracted reusable UI component when pattern repeats 3 or more times
+
+# Coordinate And CRS Conventions
+
+This section defines coordinate assumptions across FMI parsing, internal data models, and map rendering.
+
+## Upstream Conventions
+
+- `maplibre-gl` and `react-map-gl` use WGS84 semantics and coordinate order `longitude, latitude` (`lng, lat`).
+- GeoJSON (RFC 7946) positions are also `longitude, latitude`.
+- FMI request `bbox` is provided as `minLon,minLat,maxLon,maxLat` (for example `19,59,32,71`).
+- FMI XML responses in this project use GML coordinate tuples in `latitude longitude` order in `gml:pos` and `gmlcov:positions`.
+
+## Project Decision
+
+- Internal canonical coordinate format is `longitude, latitude`.
+- Parse FMI coordinates as input-format-specific data and convert immediately during normalization.
+- Store named fields (`longitude`, `latitude`) in app data structures, not unlabeled arrays.
+- Emit coordinate arrays only at integration boundaries, always as `[longitude, latitude]`.
+
+## Guardrails
+
+- Keep CRS assumptions explicit in parser code and tests.
+- Add tests that fail on swapped axes and verify conversion from FMI `latitude longitude` to internal `longitude, latitude`.
+- When reading FMI payloads, trust `srsName`/coverage metadata over assumptions from previous queries.

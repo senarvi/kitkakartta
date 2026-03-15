@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wfs:FeatureCollection
+  timeStamp="2026-03-15T07:24:49Z"
+  numberMatched="1"
+  numberReturned="1"
+  xmlns:wfs="http://www.opengis.net/wfs/2.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:om="http://www.opengis.net/om/2.0"
+  xmlns:ompr="http://inspire.ec.europa.eu/schemas/ompr/3.0"
+  xmlns:omso="http://inspire.ec.europa.eu/schemas/omso/3.0"
+  xmlns:gml="http://www.opengis.net/gml/3.2"
+  xmlns:gmd="http://www.isotc211.org/2005/gmd"
+  xmlns:gco="http://www.isotc211.org/2005/gco"
+  xmlns:swe="http://www.opengis.net/swe/2.0"
+  xmlns:gmlcov="http://www.opengis.net/gmlcov/1.0"
+  xmlns:sam="http://www.opengis.net/sampling/2.0"
+  xmlns:sams="http://www.opengis.net/samplingSpatial/2.0"
+  xmlns:target="http://xml.fmi.fi/namespace/om/atmosphericfeatures/1.1"
+  xsi:schemaLocation="http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd
+  http://www.opengis.net/gmlcov/1.0 http://schemas.opengis.net/gmlcov/1.0/gmlcovAll.xsd
+  http://www.opengis.net/sampling/2.0 http://schemas.opengis.net/sampling/2.0/samplingFeature.xsd
+  http://www.opengis.net/samplingSpatial/2.0 http://schemas.opengis.net/samplingSpatial/2.0/spatialSamplingFeature.xsd
+  http://www.opengis.net/swe/2.0 http://schemas.opengis.net/sweCommon/2.0/swe.xsd
+  http://inspire.ec.europa.eu/schemas/ompr/3.0 https://inspire.ec.europa.eu/schemas/ompr/3.0/Processes.xsd
+  http://inspire.ec.europa.eu/schemas/omso/3.0 https://inspire.ec.europa.eu/schemas/omso/3.0/SpecialisedObservations.xsd
+  http://xml.fmi.fi/namespace/om/atmosphericfeatures/1.1 https://xml.fmi.fi/schema/om/atmosphericfeatures/1.1/atmosphericfeatures.xsd">
+
+  <wfs:member>
+    <omso:GridSeriesObservation gml:id="WFS-lSgrv2dRBjc46oqo2PZ.hTFep_aJTowroWbbpdOt.Lnl5dsPTTv3c3Trvlw9NGXk6dbeuzpp4b9O7pj39svLDnywtLFlz6d1TTty2qv4Ua98r5NbFv67smndnhb_GMcoFgFBAx2gZRQDGx8udakWhTjunTRk1cM7LuyVNO3Laq_hRr3CDozteXz338slTo15fPffyyX9_bLy78tPTDi2ZYmZsw9MvPpEzNm_Hh2Za1M2m_GkruvTM4a23D4iaefTDux5aVq6EBpbcPiLw349HOcGOZvbcvTLvoYeWHbl6ZeXOsboy2tbbp589O7PUy.OlY07DObW7rtn5qfTD00793OcJrceuHZp6eZO7Nvia3Pph6ad.6p54Za0N_DLuyYemFuc.m_llyceuXl5v6clboWbbpdOt.Lnl5dsPTTv3c3Trvlw9NGXk6dbeuzpp4b9O7pj39svLDnytDpp25afTLwnUaHTTty2t.7LWNVqQwA-">
+
+                 <om:phenomenonTime>
+        <gml:TimePeriod gml:id="time1-1-1">
+          <gml:beginPosition>2026-03-15T07:13:00Z</gml:beginPosition>
+          <gml:endPosition>2026-03-15T07:24:00Z</gml:endPosition>
+        </gml:TimePeriod>
+      </om:phenomenonTime>
+      <om:resultTime>
+        <gml:TimeInstant gml:id="time2-1-1">
+          <gml:timePosition>2026-03-15T07:24:00Z</gml:timePosition>
+        </gml:TimeInstant>
+      </om:resultTime>
+
+     <om:procedure xlink:href="http://xml.fmi.fi/inspire/process/opendata"/>
+                 <om:parameter>
+                <om:NamedValue>
+                    <om:name xlink:href="https://inspire.ec.europa.eu/codeList/ProcessParameterValue/value/groundObservation/observationIntent"/>
+                    <om:value>
+			atmosphere
+                    </om:value>
+                </om:NamedValue>
+            </om:parameter>
+
+     <om:observedProperty  xlink:href="https://opendata.fmi.fi/meta?observableProperty=observation&amp;param=t2m&amp;language=eng"/>
+     	<om:featureOfInterest>
+        <sams:SF_SpatialSamplingFeature gml:id="sampling-feature-1-1-fmisid">
+
+          <sam:sampledFeature>
+		<target:LocationCollection gml:id="sampled-target-1-1">
+		    <target:member>
+		    <target:Location gml:id="obsloc-fmisid-101928-pos">
+		        <gml:identifier codeSpace="http://xml.fmi.fi/namespace/stationcode/fmisid">101928</gml:identifier>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">Rovaniemi rautatieasema</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/geoid">-16000173</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/wmo">2847</gml:name>
+			<target:representativePoint xlink:href="#point-101928"/>					
+			
+			
+			<target:region codeSpace="http://xml.fmi.fi/namespace/location/region">Rovaniemi</target:region>	   			
+			
+		    </target:Location></target:member>
+		    <target:member>
+		    <target:Location gml:id="obsloc-fmisid-101932-pos">
+		        <gml:identifier codeSpace="http://xml.fmi.fi/namespace/stationcode/fmisid">101932</gml:identifier>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">Sodankylä Tähtelä</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/geoid">-16000014</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/wmo">2836</gml:name>
+			<target:representativePoint xlink:href="#point-101932"/>					
+			
+			
+			<target:region codeSpace="http://xml.fmi.fi/namespace/location/region">Sodankylä</target:region>	   			
+			
+		    </target:Location></target:member>
+		    <target:member>
+		    <target:Location gml:id="obsloc-fmisid-101933-pos">
+		        <gml:identifier codeSpace="http://xml.fmi.fi/namespace/stationcode/fmisid">101933</gml:identifier>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">Rovaniemi Apukka</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/geoid">-16000144</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/wmo">2813</gml:name>
+			<target:representativePoint xlink:href="#point-101933"/>					
+			
+			
+			<target:region codeSpace="http://xml.fmi.fi/namespace/location/region">Rovaniemi</target:region>	   			
+			
+		    </target:Location></target:member>
+		    <target:member>
+		    <target:Location gml:id="obsloc-fmisid-101939-pos">
+		        <gml:identifier codeSpace="http://xml.fmi.fi/namespace/stationcode/fmisid">101939</gml:identifier>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">Sodankylä Luosto</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/geoid">-16000114</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/wmo">2840</gml:name>
+			<target:representativePoint xlink:href="#point-101939"/>					
+			
+			
+			<target:region codeSpace="http://xml.fmi.fi/namespace/location/region">Sodankylä</target:region>	   			
+			
+		    </target:Location></target:member>
+		    <target:member>
+		    <target:Location gml:id="obsloc-fmisid-137190-pos">
+		        <gml:identifier codeSpace="http://xml.fmi.fi/namespace/stationcode/fmisid">137190</gml:identifier>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">Rovaniemi lentoasema AWOS</gml:name>
+			<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/geoid">-137190</gml:name>
+			
+			<target:representativePoint xlink:href="#point-137190"/>					
+			
+			
+			<target:region codeSpace="http://xml.fmi.fi/namespace/location/region">Rovaniemi</target:region>	   			
+			
+		    </target:Location></target:member>
+		</target:LocationCollection>
+ 	   </sam:sampledFeature>
+          <sams:shape>
+            <gml:MultiPoint gml:id="mp-1-1-fmisid">
+              <gml:pointMember>
+              <gml:Point gml:id="point-101928" srsName="http://www.opengis.net/def/crs/EPSG/0/4258" srsDimension="2">
+                <gml:name>Rovaniemi rautatieasema</gml:name>
+                <gml:pos>66.49832 25.70880 </gml:pos>
+            </gml:Point>
+	    </gml:pointMember>
+              <gml:pointMember>
+              <gml:Point gml:id="point-101932" srsName="http://www.opengis.net/def/crs/EPSG/0/4258" srsDimension="2">
+                <gml:name>Sodankylä Tähtelä</gml:name>
+                <gml:pos>67.36663 26.62901 </gml:pos>
+            </gml:Point>
+	    </gml:pointMember>
+              <gml:pointMember>
+              <gml:Point gml:id="point-101933" srsName="http://www.opengis.net/def/crs/EPSG/0/4258" srsDimension="2">
+                <gml:name>Rovaniemi Apukka</gml:name>
+                <gml:pos>66.57944 26.01094 </gml:pos>
+            </gml:Point>
+	    </gml:pointMember>
+              <gml:pointMember>
+              <gml:Point gml:id="point-101939" srsName="http://www.opengis.net/def/crs/EPSG/0/4258" srsDimension="2">
+                <gml:name>Sodankylä Luosto</gml:name>
+                <gml:pos>67.13910 26.89692 </gml:pos>
+            </gml:Point>
+	    </gml:pointMember>
+              <gml:pointMember>
+              <gml:Point gml:id="point-137190" srsName="http://www.opengis.net/def/crs/EPSG/0/4258" srsDimension="2">
+                <gml:name>Rovaniemi lentoasema AWOS</gml:name>
+                <gml:pos>66.57276 25.84848 </gml:pos>
+            </gml:Point>
+	    </gml:pointMember>
+	    </gml:MultiPoint>
+          </sams:shape>
+        </sams:SF_SpatialSamplingFeature>
+      </om:featureOfInterest>
+
+           <om:result>
+        <gmlcov:MultiPointCoverage gml:id="mpcv1-1-1">
+          <gml:domainSet>
+            <gmlcov:SimpleMultiPoint gml:id="mp1-1-1" srsName="http://xml.fmi.fi/gml/crs/compoundCRS.php?crs=4258&amp;time=unixtime" srsDimension="3">
+              <gmlcov:positions>
+                66.49832 25.70880  1773559200
+                67.36663 26.62901  1773559200
+                66.57944 26.01094  1773559200
+                67.13910 26.89692  1773559200
+                66.57276 25.84848  1773559200
+                </gmlcov:positions>
+            </gmlcov:SimpleMultiPoint>
+          </gml:domainSet>
+          <gml:rangeSet>
+            <gml:DataBlock>
+              <gml:rangeParameters/>
+              <gml:doubleOrNilReasonTupleList>
+                0.8 
+                1.1 
+                0.8 
+                -1.4 
+                -0.1 
+                </gml:doubleOrNilReasonTupleList>
+            </gml:DataBlock>
+          </gml:rangeSet>
+          <gml:coverageFunction>
+            <gml:CoverageMappingRule>
+              <gml:ruleDefinition>Linear</gml:ruleDefinition>
+            </gml:CoverageMappingRule>
+          </gml:coverageFunction>
+          <gmlcov:rangeType>
+            <swe:DataRecord>
+              <swe:field name="t2m"  xlink:href="https://opendata.fmi.fi/meta?observableProperty=observation&amp;param=t2m&amp;language=eng"/>
+              </swe:DataRecord>
+          </gmlcov:rangeType>
+        </gmlcov:MultiPointCoverage>
+      </om:result>
+
+    </omso:GridSeriesObservation>
+  </wfs:member>
+</wfs:FeatureCollection>
