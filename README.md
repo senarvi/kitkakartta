@@ -40,3 +40,15 @@ Preview the production build:
 ```bash
 npm run preview
 ```
+
+## Deployment
+
+This repository is configured for GitHub Pages deployment using [GitHub Actions](.github/workflows/deploy-pages.yml).
+
+Required GitHub repository settings:
+
+1. Open `Settings -> Pages`.
+2. Set `Source` to `GitHub Actions`.
+3. Ensure the default branch is `main`.
+
+Every push to `main` builds and deploys the `dist/` output.
