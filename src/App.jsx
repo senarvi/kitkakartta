@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { RadarLayerToggle } from './components/RadarLayerToggle'
 import { RainfallLayerToggle } from './components/RainfallLayerToggle'
 import { RainfallTimespanToggle } from './components/RainfallTimespanToggle'
 import { TemperatureLayerToggle } from './components/TemperatureLayerToggle'
@@ -11,6 +12,7 @@ import {
   RAINFALL_TIMESPAN_OPTIONS,
 } from './constants/weather'
 import { useLatestWeatherObservations } from './hooks/useLatestWeatherObservations'
+import { useLatestRadarOverlay } from './hooks/useLatestRadarOverlay'
 
 const OSM_RASTER_STYLE = {
   version: 8,
@@ -113,6 +115,16 @@ const RAINFALL_LABEL_LAYER = {
   },
 }
 
+const RADAR_RASTER_LAYER = {
+  id: 'radar-raster-layer',
+  type: 'raster',
+  source: 'radar-source',
+  paint: {
+    'raster-opacity': 0.26,
+    'raster-resampling': 'linear',
+  },
+}
+
 function formatTemperature(temperatureC) {
   const rounded = Math.round(temperatureC * 10) / 10
   return `${rounded.toFixed(1)} °C`
@@ -141,6 +153,7 @@ function formatLastUpdatedAt(isoString) {
 
 function App() {
   const [viewState, setViewState] = useState(DEFAULT_VIEW_STATE)
+  const [isRadarLayerVisible, setIsRadarLayerVisible] = useState(false)
   const [isTemperatureLayerVisible, setIsTemperatureLayerVisible] = useState(true)
   const [isRainfallLayerVisible, setIsRainfallLayerVisible] = useState(true)
   const [rainfallTimespanKey, setRainfallTimespanKey] = useState(DEFAULT_RAINFALL_TIMESPAN_KEY)
@@ -165,6 +178,13 @@ function App() {
   } = useLatestWeatherObservations({
     timespanKey: rainfallTimespanKey,
   })
+  const {
+    tileUrl: radarTileUrl,
+    isLoading: isRadarLoading,
+    errorMessage: radarErrorMessage,
+    isErrorWithoutData: isRadarErrorWithoutData,
+    hasData: hasRadarData,
+  } = useLatestRadarOverlay()
 
   const visibleTemperatureObservations = useMemo(
     () => (isTemperatureLayerVisible ? temperatureObservations : []),
@@ -274,6 +294,11 @@ function App() {
         reuseMaps
         style={{ width: '100%', height: '100%' }}
       >
+        {isRadarLayerVisible && hasRadarData && (
+          <Source id="radar-source" type="raster" tiles={[radarTileUrl]} tileSize={1024}>
+            <Layer {...RADAR_RASTER_LAYER} />
+          </Source>
+        )}
         {visibleTemperatureObservations.length > 0 && (
           <Source id="temperature-source" type="geojson" data={temperatureGeoJson}>
             <Layer {...TEMPERATURE_POINT_LAYER} />
@@ -288,30 +313,31 @@ function App() {
         )}
       </Map>
 
-      <section className="pointer-events-none absolute left-3 top-3 z-10 w-[min(28rem,calc(100%-1.5rem))] space-y-2">
-        <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 shadow-sm backdrop-blur">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="m-0 text-sm font-semibold text-slate-900">FMI Station Temperature</h1>
-            <div className="flex items-center gap-2">
-              <TemperatureLayerToggle
-                isVisible={isTemperatureLayerVisible}
-                onToggle={() => setIsTemperatureLayerVisible((visible) => !visible)}
-              />
-              <RainfallLayerToggle
-                isVisible={isRainfallLayerVisible}
-                onToggle={() => setIsRainfallLayerVisible((visible) => !visible)}
-              />
-            </div>
+      <section className="pointer-events-none absolute left-3 top-3 z-10 space-y-2">
+        <div className="pointer-events-auto inline-block rounded-lg border border-slate-200 bg-white/90 p-3 shadow-sm backdrop-blur">
+          <div className="flex items-center gap-2">
+            <TemperatureLayerToggle
+              isVisible={isTemperatureLayerVisible}
+              onToggle={() => setIsTemperatureLayerVisible((visible) => !visible)}
+            />
+            <RainfallLayerToggle
+              isVisible={isRainfallLayerVisible}
+              onToggle={() => setIsRainfallLayerVisible((visible) => !visible)}
+            />
+            <RadarLayerToggle
+              isVisible={isRadarLayerVisible}
+              onToggle={() => setIsRadarLayerVisible((visible) => !visible)}
+            />
           </div>
-          <p className="mt-2 text-xs text-slate-700">
-            Updated:{' '}
-            <span className="font-medium">{formatLastUpdatedAt(weatherLastUpdatedAt)}</span>
-          </p>
           <RainfallTimespanToggle
             selectedKey={rainfallTimespanKey}
             options={rainfallTimespanOptions}
             onSelect={setRainfallTimespanKey}
           />
+          <p className="mt-2 text-xs text-slate-700">
+            Updated:{' '}
+            <span className="font-medium">{formatLastUpdatedAt(weatherLastUpdatedAt)}</span>
+          </p>
         </div>
 
         {isWeatherLoading && (
@@ -320,9 +346,21 @@ function App() {
           </div>
         )}
 
+        {isRadarLayerVisible && isRadarLoading && (
+          <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
+            Loading latest radar overlay...
+          </div>
+        )}
+
         {weatherErrorMessage && !isErrorWithoutAnyData && (
           <div className="pointer-events-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-sm text-amber-900 shadow-sm backdrop-blur">
             {weatherErrorMessage}
+          </div>
+        )}
+
+        {isRadarLayerVisible && radarErrorMessage && !isRadarErrorWithoutData && (
+          <div className="pointer-events-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-sm text-amber-900 shadow-sm backdrop-blur">
+            {radarErrorMessage}
           </div>
         )}
 
@@ -341,6 +379,12 @@ function App() {
         {isErrorWithoutAnyData && (
           <div className="pointer-events-auto rounded-lg border border-rose-300 bg-rose-50/95 p-3 text-sm text-rose-900 shadow-sm backdrop-blur">
             Unable to load weather observations right now.
+          </div>
+        )}
+
+        {isRadarLayerVisible && isRadarErrorWithoutData && (
+          <div className="pointer-events-auto rounded-lg border border-rose-300 bg-rose-50/95 p-3 text-sm text-rose-900 shadow-sm backdrop-blur">
+            Unable to load radar overlay right now.
           </div>
         )}
       </section>

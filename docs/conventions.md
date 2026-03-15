@@ -166,3 +166,47 @@ This section defines coordinate assumptions across FMI parsing, internal data mo
 - Keep CRS assumptions explicit in parser code and tests.
 - Add tests that fail on swapped axes and verify conversion from FMI `latitude longitude` to internal `longitude, latitude`.
 - When reading FMI payloads, trust `srsName`/coverage metadata over assumptions from previous queries.
+
+# Timestamp Conventions
+
+This section defines timestamp handling across FMI requests, normalized observation models, and UI rendering.
+
+## Canonical Formats
+
+- Use UTC as the canonical time basis for parsing, comparisons, and request construction.
+- Keep both forms when useful:
+  - Epoch milliseconds for logic: `observedAtEpochMs`
+  - ISO-8601 string for metadata/UI: `observedAtIso`, `lastUpdatedAt`, `requestedAt`
+- Keep units explicit in names:
+  - `*EpochMs` for numeric millisecond timestamps
+  - `*Iso` for ISO timestamp strings
+
+## FMI Request Timestamps
+
+- Build FMI `starttime` and `endtime` as UTC ISO-8601 values.
+- Strip milliseconds from query parameters for stable request strings (`YYYY-MM-DDTHH:mm:ssZ`).
+- Keep request window logic explicit in code (for example lookback minutes/hours and aggregation window).
+
+## Observation Normalization
+
+- Convert FMI Unix timestamps (seconds) to epoch milliseconds immediately during parsing.
+- Preserve the original observation time as ISO in normalized objects.
+- Do not store local-time-formatted values in domain models.
+
+## UI Display Conventions
+
+- Format display timestamps only at UI boundaries.
+- Show user-facing times with explicit locale/timezone settings (currently `fi-FI`, `Europe/Helsinki`).
+- Keep internal state and comparisons timezone-agnostic (UTC-based).
+
+## Staleness And Polling
+
+- Evaluate staleness using epoch millisecond arithmetic only.
+- Keep polling interval and stale threshold centralized in constants.
+- Use `lastUpdatedAt` to represent the timestamp of the last successful data refresh.
+
+## Guardrails
+
+- Avoid mixing seconds and milliseconds in the same field.
+- Avoid parsing localized date strings back into logic.
+- Add tests for time-window boundaries (inclusive/exclusive behavior) for rainfall aggregation and freshness filtering.

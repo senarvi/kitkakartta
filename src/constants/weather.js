@@ -1,7 +1,10 @@
 export const FMI_WFS_BASE_URL = 'https://opendata.fmi.fi/wfs'
 export const FMI_STORED_QUERY_ID = 'fmi::observations::weather::multipointcoverage'
+export const FMI_RADAR_RR1H_STORED_QUERY_ID = 'fmi::radar::composite::rr1h'
 export const FMI_TEMPERATURE_PARAMETER = 't2m'
 export const FMI_RAINFALL_PARAMETER = 'r_1h'
+export const FMI_RADAR_WMS_BASE_URL = 'https://openwms.fmi.fi/geoserver/Radar/wms'
+export const FMI_RADAR_WMS_LAYER_RR1H = 'Radar:suomi_rr1h_eureffin'
 
 export const RAINFALL_TIMESPAN_OPTIONS = {
   '1h': {
@@ -40,5 +43,6 @@ export const FINLAND_BOUNDS = [
 
 export const REQUEST_LOOKBACK_MINUTES = 15
 export const REQUEST_TIMESTEP_MINUTES = 10
+export const RADAR_REQUEST_LOOKBACK_HOURS = 2
 export const POLL_INTERVAL_MS = 10 * 60 * 1000
 export const STALE_THRESHOLD_MS = 30 * 60 * 1000

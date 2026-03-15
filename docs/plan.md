@@ -22,54 +22,6 @@ Minimum test coverage:
 - Latest-value selection per station
 - Missing and malformed values
 - Empty response handling
-
-## Phase 2 Plan: Rainfall Visualization
-
-### Add radar composites toggle
-
-Use radar grid products for area-wide precipitation maps.
-
-- `fmi::radar::composite::rr` (precipitation rate)
-- `fmi::radar::composite::rr1h` (1h amount)
-- `fmi::radar::composite::rr12h` (12h amount)
-- `fmi::radar::composite::rr24h` (24h amount)
-
-Benefits:
-
-- Continuous Finland-wide precipitation coverage.
-- Better spatial context at low zoom.
-
-- Radar composite as background precipitation field.
-- Station labels for exact measured values.
-- Zoom-dependent emphasis (radar at low zoom, station details at higher zoom).
-
-## Recommended Delivery Sequence
-
-### Phase 2B: Radar overlay
-
-1. Add optional radar precipitation layer (`rr1h` first).
-2. Render as map overlay with adjustable opacity.
-3. Add legend for radar value scale and units.
-4. Show radar timestamp separately from station timestamp.
-
-### Phase 2C: Unified rainfall view
-
-1. Tune layer ordering and visibility by zoom level.
-2. Add UI for selecting rainfall product (`rr`, `rr1h`, `rr24h`).
-3. Keep map readable when temperature and rainfall are both enabled.
-
-## Data and Naming Conventions for Rainfall
-
-- Use explicit unit suffixes in code:
-	- `rainfallRateMmPerH` for rate
-	- `rainfallAmount1hMm`, `rainfallAmount24hMm` for accumulated amounts
-- Keep internal coordinates in `longitude`, `latitude`.
-- Keep timestamps in epoch milliseconds and ISO strings.
-
-## Test Strategy (Phase 2)
-
-Minimum coverage:
-
 - Parse/normalize rainfall values from FMI response.
 - Latest-value selection per station for rainfall.
 - Missing/malformed rainfall values.
@@ -77,7 +29,11 @@ Minimum coverage:
 - Layer toggle behavior (`Temperature`, `Rainfall`, both on/off).
 - If radar is added: legend scale mapping and overlay visibility logic.
 
-## Definition of Done (Phase 2A)
+## Phase 2 Plan: Rainfall Visualization
+
+Select rainfall product (`rr1h`, `rr12h`, `rr24h`) from the 1h/12h/24h buttons in the UI.
+
+## Definition of Done
 
 - Rainfall layer can be enabled and disabled independently.
 - Latest rainfall values are shown for stations with valid recent data.
@@ -85,7 +41,7 @@ Minimum coverage:
 - Loading, empty, and error states behave consistently with temperature.
 - Basic rainfall transformation tests pass.
 
-## Implementation Checklist (Phase 2A)
+## Implementation Checklist
 
 ### 1. Constants and query configuration
 
