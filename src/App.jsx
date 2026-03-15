@@ -290,7 +290,7 @@ function App() {
         minZoom={4}
         maxZoom={9}
         dragRotate={false}
-        touchZoomRotate={false}
+        touchZoomRotate
         pitchWithRotate={false}
         attributionControl
         reuseMaps
