@@ -1,6 +1,10 @@
 export function RainfallTimespanToggle({ selectedKey, options, onSelect }) {
   return (
-    <div className="mt-2 flex items-center gap-1" role="group" aria-label="Rainfall timespan">
+    <div
+      className="mt-2 flex w-full items-center justify-end gap-1"
+      role="group"
+      aria-label="Rainfall timespan"
+    >
       {options.map((option) => {
         const isSelected = selectedKey === option.key
         const className = isSelected

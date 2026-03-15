@@ -14,6 +14,8 @@ const INITIAL_STATE = {
   didLoadOnce: false,
 }
 
+const radarCacheByTimespanKey = new Map()
+
 export function useLatestRadarOverlay({ timespanKey = DEFAULT_RAINFALL_TIMESPAN_KEY } = {}) {
   const [state, setState] = useState(INITIAL_STATE)
   const lastSuccessfulStateRef = useRef(INITIAL_STATE)
@@ -22,7 +24,26 @@ export function useLatestRadarOverlay({ timespanKey = DEFAULT_RAINFALL_TIMESPAN_
     let isDisposed = false
     let activeController = null
 
+    const getFreshCachedState = () => {
+      const cachedEntry = radarCacheByTimespanKey.get(timespanKey)
+
+      if (!cachedEntry) {
+        return null
+      }
+
+      const isFresh = Date.now() - cachedEntry.fetchedAtEpochMs < POLL_INTERVAL_MS
+      return isFresh ? cachedEntry.state : null
+    }
+
     const load = async () => {
+      const freshCachedState = getFreshCachedState()
+
+      if (freshCachedState) {
+        lastSuccessfulStateRef.current = freshCachedState
+        setState(freshCachedState)
+        return
+      }
+
       activeController?.abort()
       const controller = new AbortController()
       activeController = controller
@@ -58,13 +79,18 @@ export function useLatestRadarOverlay({ timespanKey = DEFAULT_RAINFALL_TIMESPAN_
         }
 
         lastSuccessfulStateRef.current = nextState
+        radarCacheByTimespanKey.set(timespanKey, {
+          state: nextState,
+          fetchedAtEpochMs: Date.now(),
+        })
         setState(nextState)
       } catch {
         if (isDisposed || controller.signal.aborted) {
           return
         }
 
-        const cachedState = lastSuccessfulStateRef.current
+        const cachedEntry = radarCacheByTimespanKey.get(timespanKey)
+        const cachedState = cachedEntry?.state ?? lastSuccessfulStateRef.current
 
         setState({
           tileUrl: cachedState.tileUrl,

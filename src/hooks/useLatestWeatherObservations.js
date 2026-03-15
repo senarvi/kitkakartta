@@ -20,6 +20,8 @@ const INITIAL_STATE = {
   didLoadOnce: false,
 }
 
+const weatherCacheByTimespanKey = new Map()
+
 export function useLatestWeatherObservations({
   timespanKey = DEFAULT_RAINFALL_TIMESPAN_KEY,
 } = {}) {
@@ -33,9 +35,28 @@ export function useLatestWeatherObservations({
     let isDisposed = false
     let activeController = null
 
-    lastSuccessfulStateRef.current = INITIAL_STATE
+    const currentTimespanKey = selectedTimespan.key
+
+    const getFreshCachedState = () => {
+      const cachedEntry = weatherCacheByTimespanKey.get(currentTimespanKey)
+
+      if (!cachedEntry) {
+        return null
+      }
+
+      const isFresh = Date.now() - cachedEntry.fetchedAtEpochMs < POLL_INTERVAL_MS
+      return isFresh ? cachedEntry.state : null
+    }
 
     const load = async () => {
+      const freshCachedState = getFreshCachedState()
+
+      if (freshCachedState) {
+        lastSuccessfulStateRef.current = freshCachedState
+        setState(freshCachedState)
+        return
+      }
+
       activeController?.abort()
       const controller = new AbortController()
       activeController = controller
@@ -75,13 +96,18 @@ export function useLatestWeatherObservations({
         }
 
         lastSuccessfulStateRef.current = nextState
+        weatherCacheByTimespanKey.set(currentTimespanKey, {
+          state: nextState,
+          fetchedAtEpochMs: Date.now(),
+        })
         setState(nextState)
       } catch {
         if (isDisposed || controller.signal.aborted) {
           return
         }
 
-        const cachedState = lastSuccessfulStateRef.current
+        const cachedEntry = weatherCacheByTimespanKey.get(currentTimespanKey)
+        const cachedState = cachedEntry?.state ?? lastSuccessfulStateRef.current
 
         setState({
           temperatureObservations: cachedState.temperatureObservations,
@@ -103,7 +129,7 @@ export function useLatestWeatherObservations({
       activeController?.abort()
       window.clearInterval(intervalId)
     }
-  }, [selectedTimespan.aggregationHours])
+  }, [selectedTimespan.aggregationHours, selectedTimespan.key])
 
   return useMemo(() => {
     const hasTemperatureData = state.temperatureObservations.length > 0
