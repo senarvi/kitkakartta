@@ -26,6 +26,10 @@ function floorToUtcHour(date) {
   )
 }
 
+function getCombinedWeatherParameters() {
+  return `${FMI_TEMPERATURE_PARAMETER},${FMI_RAINFALL_PARAMETER}`
+}
+
 export function buildLatestTemperatureRequestUrl(now = new Date()) {
   const startTime = new Date(now.getTime() - REQUEST_LOOKBACK_MINUTES * 60 * 1000)
 
@@ -63,6 +67,25 @@ export function buildRainfallRequestUrl({ now = new Date(), aggregationHours = 1
   return `${FMI_WFS_BASE_URL}?${params.toString()}`
 }
 
+export function buildLatestWeatherRequestUrl({ now = new Date(), aggregationHours = 1 } = {}) {
+  const endTime = now
+  const startTime = new Date(endTime.getTime() - aggregationHours * 60 * 60 * 1000)
+
+  const params = new URLSearchParams({
+    service: 'WFS',
+    version: '2.0.0',
+    request: 'getFeature',
+    storedquery_id: FMI_STORED_QUERY_ID,
+    bbox: `${FINLAND_BBOX.minLon},${FINLAND_BBOX.minLat},${FINLAND_BBOX.maxLon},${FINLAND_BBOX.maxLat}`,
+    parameters: getCombinedWeatherParameters(),
+    timestep: String(REQUEST_TIMESTEP_MINUTES),
+    starttime: toUtcIsoWithoutMilliseconds(startTime),
+    endtime: toUtcIsoWithoutMilliseconds(endTime),
+  })
+
+  return `${FMI_WFS_BASE_URL}?${params.toString()}`
+}
+
 export async function fetchLatestTemperatureXml({ signal, now = new Date() } = {}) {
   const url = buildLatestTemperatureRequestUrl(now)
   const response = await fetch(url, { signal })
@@ -79,6 +102,24 @@ export async function fetchLatestTemperatureXml({ signal, now = new Date() } = {
 
 export async function fetchRainfallXml({ signal, now = new Date(), aggregationHours = 1 } = {}) {
   const url = buildRainfallRequestUrl({ now, aggregationHours })
+  const response = await fetch(url, { signal })
+
+  if (!response.ok) {
+    throw new Error(`FMI request failed with status ${response.status}`)
+  }
+
+  return {
+    xmlText: await response.text(),
+    requestedAt: now.toISOString(),
+  }
+}
+
+export async function fetchLatestWeatherXml({
+  signal,
+  now = new Date(),
+  aggregationHours = 1,
+} = {}) {
+  const url = buildLatestWeatherRequestUrl({ now, aggregationHours })
   const response = await fetch(url, { signal })
 
   if (!response.ok) {

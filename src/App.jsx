@@ -10,8 +10,7 @@ import {
   FINLAND_BOUNDS,
   RAINFALL_TIMESPAN_OPTIONS,
 } from './constants/weather'
-import { useLatestRainfall } from './hooks/useLatestRainfall'
-import { useLatestTemperatures } from './hooks/useLatestTemperatures'
+import { useLatestWeatherObservations } from './hooks/useLatestWeatherObservations'
 
 const OSM_RASTER_STYLE = {
   version: 8,
@@ -154,22 +153,16 @@ function App() {
     [],
   )
   const {
-    observations: temperatureObservations,
-    errorMessage: temperatureErrorMessage,
-    isLoading: isTemperatureLoading,
-    isEmpty: isTemperatureEmpty,
-    isErrorWithoutData: isTemperatureErrorWithoutData,
-    lastUpdatedAt: temperatureLastUpdatedAt,
-  } = useLatestTemperatures()
-  const {
-    observations: rainfallObservations,
-    errorMessage: rainfallErrorMessage,
-    isLoading: isRainfallLoading,
-    isEmpty: isRainfallEmpty,
-    isErrorWithoutData: isRainfallErrorWithoutData,
-    lastUpdatedAt: rainfallLastUpdatedAt,
+    temperatureObservations,
+    rainfallObservations,
+    errorMessage: weatherErrorMessage,
+    isLoading: isWeatherLoading,
+    isTemperatureEmpty,
+    isRainfallEmpty,
+    isErrorWithoutAnyData,
+    lastUpdatedAt: weatherLastUpdatedAt,
     unitLabel: rainfallUnitLabel,
-  } = useLatestRainfall({
+  } = useLatestWeatherObservations({
     timespanKey: rainfallTimespanKey,
   })
 
@@ -311,12 +304,8 @@ function App() {
             </div>
           </div>
           <p className="mt-2 text-xs text-slate-700">
-            Temperature updated:{' '}
-            <span className="font-medium">{formatLastUpdatedAt(temperatureLastUpdatedAt)}</span>
-          </p>
-          <p className="mt-1 text-xs text-slate-700">
-            Rainfall updated:{' '}
-            <span className="font-medium">{formatLastUpdatedAt(rainfallLastUpdatedAt)}</span>
+            Updated:{' '}
+            <span className="font-medium">{formatLastUpdatedAt(weatherLastUpdatedAt)}</span>
           </p>
           <RainfallTimespanToggle
             selectedKey={rainfallTimespanKey}
@@ -325,27 +314,15 @@ function App() {
           />
         </div>
 
-        {isTemperatureLoading && (
+        {isWeatherLoading && (
           <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
-            Loading latest temperature observations...
+            Loading latest weather observations...
           </div>
         )}
 
-        {isRainfallLoading && (
-          <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
-            Loading latest rainfall observations...
-          </div>
-        )}
-
-        {temperatureErrorMessage && !isTemperatureErrorWithoutData && (
+        {weatherErrorMessage && !isErrorWithoutAnyData && (
           <div className="pointer-events-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-sm text-amber-900 shadow-sm backdrop-blur">
-            {temperatureErrorMessage}
-          </div>
-        )}
-
-        {rainfallErrorMessage && !isRainfallErrorWithoutData && (
-          <div className="pointer-events-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-sm text-amber-900 shadow-sm backdrop-blur">
-            {rainfallErrorMessage}
+            {weatherErrorMessage}
           </div>
         )}
 
@@ -361,15 +338,9 @@ function App() {
           </div>
         )}
 
-        {isTemperatureErrorWithoutData && (
+        {isErrorWithoutAnyData && (
           <div className="pointer-events-auto rounded-lg border border-rose-300 bg-rose-50/95 p-3 text-sm text-rose-900 shadow-sm backdrop-blur">
-            Unable to load temperature observations right now.
-          </div>
-        )}
-
-        {isRainfallErrorWithoutData && (
-          <div className="pointer-events-auto rounded-lg border border-rose-300 bg-rose-50/95 p-3 text-sm text-rose-900 shadow-sm backdrop-blur">
-            Unable to load rainfall observations right now.
+            Unable to load weather observations right now.
           </div>
         )}
       </section>

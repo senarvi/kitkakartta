@@ -94,7 +94,7 @@ function parseStationMetadata(doc) {
   }
 }
 
-function parseWeatherObservationsXml(xmlText, { valuePropertyName }) {
+function parseWeatherObservationsXml(xmlText, { valuePropertyNames }) {
   const xmlDoc = new DOMParser().parseFromString(xmlText, 'text/xml')
   const parserErrorNode = xmlDoc.querySelector('parsererror')
 
@@ -106,6 +106,11 @@ function parseWeatherObservationsXml(xmlText, { valuePropertyName }) {
   const { pointsInOrder, stationByCoordinateKey } = parseStationMetadata(xmlDoc)
   const positionsNodes = getElementsByLocalName(xmlDoc, 'positions')
   const valueListNodes = getElementsByLocalName(xmlDoc, 'doubleOrNilReasonTupleList')
+  const valueCountPerTuple = valuePropertyNames.length
+
+  if (valueCountPerTuple < 1) {
+    return observations
+  }
 
   for (let coverageIndex = 0; coverageIndex < positionsNodes.length; coverageIndex += 1) {
     const positionsNode = positionsNodes[coverageIndex]
@@ -116,18 +121,36 @@ function parseWeatherObservationsXml(xmlText, { valuePropertyName }) {
     }
 
     const tuples = parsePositionTuples(getTextContent(positionsNode))
-    const values = getTextContent(valueListNode).split(/\s+/).filter(Boolean)
-    const tupleCount = Math.min(tuples.length, values.length)
+    const valueTokens = getTextContent(valueListNode).split(/\s+/).filter(Boolean)
+    const availableTupleCount = Math.floor(valueTokens.length / valueCountPerTuple)
+    const tupleCount = Math.min(tuples.length, availableTupleCount)
 
     for (let index = 0; index < tupleCount; index += 1) {
       const tuple = tuples[index]
-      const measurementValue = Number(values[index])
+      const tupleValues = {}
+      let hasAtLeastOneFiniteValue = false
+
+      for (
+        let valueIndex = 0;
+        valueIndex < valueCountPerTuple;
+        valueIndex += 1
+      ) {
+        const tokenIndex = index * valueCountPerTuple + valueIndex
+        const measurementValue = Number(valueTokens[tokenIndex])
+
+        if (!Number.isFinite(measurementValue)) {
+          continue
+        }
+
+        tupleValues[valuePropertyNames[valueIndex]] = measurementValue
+        hasAtLeastOneFiniteValue = true
+      }
 
       if (!Number.isFinite(tuple.latitude) || !Number.isFinite(tuple.longitude)) {
         continue
       }
 
-      if (!Number.isFinite(tuple.unixTimeSeconds) || !Number.isFinite(measurementValue)) {
+      if (!Number.isFinite(tuple.unixTimeSeconds) || !hasAtLeastOneFiniteValue) {
         continue
       }
 
@@ -147,7 +170,7 @@ function parseWeatherObservationsXml(xmlText, { valuePropertyName }) {
         // Internal convention is always longitude, latitude.
         longitude: tuple.longitude,
         latitude: tuple.latitude,
-        [valuePropertyName]: measurementValue,
+        ...tupleValues,
         observedAtEpochMs,
         observedAtIso: new Date(observedAtEpochMs).toISOString(),
       })
@@ -159,13 +182,19 @@ function parseWeatherObservationsXml(xmlText, { valuePropertyName }) {
 
 export function parseTemperatureObservationsXml(xmlText) {
   return parseWeatherObservationsXml(xmlText, {
-    valuePropertyName: 'temperatureC',
+    valuePropertyNames: ['temperatureC'],
   })
 }
 
 export function parseRainfallObservationsXml(xmlText) {
   return parseWeatherObservationsXml(xmlText, {
-    valuePropertyName: 'rainfallAmount1hMm',
+    valuePropertyNames: ['rainfallAmount1hMm'],
+  })
+}
+
+export function parseCombinedWeatherObservationsXml(xmlText) {
+  return parseWeatherObservationsXml(xmlText, {
+    valuePropertyNames: ['temperatureC', 'rainfallAmount1hMm'],
   })
 }
 
@@ -176,6 +205,10 @@ export function selectLatestTemperatureByStation(
   const latestByStationId = new Map()
 
   for (const observation of observations) {
+    if (!Number.isFinite(observation.temperatureC)) {
+      continue
+    }
+
     const latest = latestByStationId.get(observation.stationId)
     if (!latest || observation.observedAtEpochMs > latest.observedAtEpochMs) {
       latestByStationId.set(observation.stationId, observation)

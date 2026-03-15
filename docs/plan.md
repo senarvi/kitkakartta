@@ -5,6 +5,7 @@
 - Fetch latest measured air temperature from FMI observation stations.
 - The client calls FMI directly from browser. Avoid having to implement a separate backend.
 - Display the temperatures on a map of Finland as numerical values (degrees Celsius).
+- Visualize rainfall on the map with numerical values (mm) and by overlaying radar data.
 - Render values on the map using React + MapLibre GL JS.
 - If there's no data from all stations, it's not a problem. Display the data that we have.
 - Cache latest successful payload in memory for transient errors.
@@ -22,43 +23,9 @@ Minimum test coverage:
 - Missing and malformed values
 - Empty response handling
 
-## Definition of Done (Phase 1)
-
-- Map renders Finland with station points.
-- Latest temperature shown for each station with valid recent data.
-- Clear loading, empty, and error states.
-- Units shown (`°C`).
-- Basic tests for data transformation logic pass.
-
 ## Phase 2 Plan: Rainfall Visualization
 
-## Objectives
-
-- Visualize rainfall on the Finland map with clear units and timestamps.
-- Keep the implementation compatible with existing map layer toggles.
-- Reuse the current polling, caching, and error-handling patterns.
-
-## FMI Data Options
-
-### Option A: Station observations (recommended first step)
-
-Use weather observation stored queries and request rainfall-related parameters.
-
-- `fmi::observations::weather::multipointcoverage`
-- `fmi::observations::weather::hourly::multipointcoverage`
-- `fmi::observations::weather::daily::multipointcoverage`
-
-Benefits:
-
-- Same data model style as current temperature implementation.
-- Fast to implement with current parser architecture.
-- Good for point labels and tooltips.
-
-Limitations:
-
-- Sparse station network compared to full-area rainfall fields.
-
-### Option B: Radar composites (recommended second step)
+### Add radar composites toggle
 
 Use radar grid products for area-wide precipitation maps.
 
@@ -72,26 +39,11 @@ Benefits:
 - Continuous Finland-wide precipitation coverage.
 - Better spatial context at low zoom.
 
-Limitations:
-
-- More complex rendering and color-scale handling than station points.
-
-### Option C: Combined mode (target state)
-
 - Radar composite as background precipitation field.
 - Station labels for exact measured values.
 - Zoom-dependent emphasis (radar at low zoom, station details at higher zoom).
 
 ## Recommended Delivery Sequence
-
-### Phase 2A: Rainfall from stations
-
-1. Add `Rainfall` layer toggle next to `Temperature`.
-2. Implement rainfall fetch path using weather observation stored query.
-3. Parse and normalize rainfall values with explicit `rainfall` naming and units.
-4. Keep newest value per station.
-5. Render collision-aware rainfall labels using the current `Source` + `Layer` pattern.
-6. Reuse loading/empty/error and cache fallback behavior.
 
 ### Phase 2B: Radar overlay
 

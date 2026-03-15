@@ -1,13 +1,17 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
+  parseCombinedWeatherObservationsXml,
   parseRainfallObservationsXml,
   selectAggregatedRainfallByStation,
   parseTemperatureObservationsXml,
   selectLatestTemperatureByStation,
 } from './fmiTemperatureParser'
 
-const exampleXml = readFileSync('docs/fmi/temperature_example.xml', 'utf8')
+const exampleFixturePath = existsSync('docs/fmi/weather_example.xml')
+  ? 'docs/fmi/weather_example.xml'
+  : 'docs/fmi/temperature_example.xml'
+const exampleXml = readFileSync(exampleFixturePath, 'utf8')
 
 const minimalXml = `
 <wfs:FeatureCollection xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmlcov="http://www.opengis.net/gmlcov/1.0" xmlns:target="http://xml.fmi.fi/namespace/om/atmosphericfeatures/1.1" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -43,6 +47,44 @@ const malformedValueXml = `
   </gmlcov:positions>
   <gml:doubleOrNilReasonTupleList>
     NaN
+  </gml:doubleOrNilReasonTupleList>
+</wfs:FeatureCollection>
+`
+
+const combinedValuesXml = `
+<wfs:FeatureCollection xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmlcov="http://www.opengis.net/gmlcov/1.0" xmlns:target="http://xml.fmi.fi/namespace/om/atmosphericfeatures/1.1" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <target:Location gml:id="obsloc-fmisid-123-pos">
+    <gml:identifier codeSpace="http://xml.fmi.fi/namespace/stationcode/fmisid">123</gml:identifier>
+    <gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">Test Station</gml:name>
+    <target:representativePoint xlink:href="#point-123"/>
+  </target:Location>
+  <gml:Point gml:id="point-123">
+    <gml:pos>60.1 24.9</gml:pos>
+  </gml:Point>
+  <gmlcov:positions>
+    60.1 24.9 1700000000
+  </gmlcov:positions>
+  <gml:doubleOrNilReasonTupleList>
+    2.6 0.8
+  </gml:doubleOrNilReasonTupleList>
+</wfs:FeatureCollection>
+`
+
+const combinedWithMissingRainfallXml = `
+<wfs:FeatureCollection xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmlcov="http://www.opengis.net/gmlcov/1.0" xmlns:target="http://xml.fmi.fi/namespace/om/atmosphericfeatures/1.1" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <target:Location gml:id="obsloc-fmisid-123-pos">
+    <gml:identifier codeSpace="http://xml.fmi.fi/namespace/stationcode/fmisid">123</gml:identifier>
+    <gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">Test Station</gml:name>
+    <target:representativePoint xlink:href="#point-123"/>
+  </target:Location>
+  <gml:Point gml:id="point-123">
+    <gml:pos>60.1 24.9</gml:pos>
+  </gml:Point>
+  <gmlcov:positions>
+    60.1 24.9 1700000000
+  </gmlcov:positions>
+  <gml:doubleOrNilReasonTupleList>
+    2.6 NaN
   </gml:doubleOrNilReasonTupleList>
 </wfs:FeatureCollection>
 `
@@ -137,6 +179,30 @@ describe('parseRainfallObservationsXml', () => {
       latitude: 60.1,
       rainfallAmount1hMm: 2.6,
     })
+  })
+})
+
+describe('parseCombinedWeatherObservationsXml', () => {
+  it('parses temperature and rainfall from the same tuple list', () => {
+    const observations = parseCombinedWeatherObservationsXml(combinedValuesXml)
+
+    expect(observations).toHaveLength(1)
+    expect(observations[0]).toMatchObject({
+      stationId: '123',
+      stationName: 'Test Station',
+      longitude: 24.9,
+      latitude: 60.1,
+      temperatureC: 2.6,
+      rainfallAmount1hMm: 0.8,
+    })
+  })
+
+  it('keeps temperature value when rainfall token is missing', () => {
+    const observations = parseCombinedWeatherObservationsXml(combinedWithMissingRainfallXml)
+
+    expect(observations).toHaveLength(1)
+    expect(observations[0].temperatureC).toBe(2.6)
+    expect(observations[0].rainfallAmount1hMm).toBeUndefined()
   })
 })
 
