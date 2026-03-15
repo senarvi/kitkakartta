@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -197,6 +197,7 @@ function formatLastUpdatedAt(isoString) {
 }
 
 function App() {
+  const mapRef = useRef(null)
   const [viewState, setViewState] = useState(DEFAULT_VIEW_STATE)
   const [isRadarLayerVisible, setIsRadarLayerVisible] = useState(false)
   const [isTemperatureLayerVisible, setIsTemperatureLayerVisible] = useState(true)
@@ -356,6 +357,11 @@ function App() {
     <main className="relative h-dvh w-full">
       <Map
         mapLib={maplibregl}
+        ref={mapRef}
+        onLoad={(event) => {
+          // Allow pinch zoom on touch devices but prevent accidental map rotation.
+          event.target.touchZoomRotate.disableRotation()
+        }}
         crossSourceCollisions
         longitude={viewState.longitude}
         latitude={viewState.latitude}
