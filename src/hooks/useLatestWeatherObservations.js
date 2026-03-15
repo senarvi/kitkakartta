@@ -8,12 +8,14 @@ import {
 import {
   parseCombinedWeatherObservationsXml,
   selectAggregatedRainfallByStation,
+  selectAverageRelativeHumidityByStation,
   selectLatestTemperatureByStation,
 } from '../parsers/fmiTemperatureParser'
 
 const INITIAL_STATE = {
   temperatureObservations: [],
   rainfallObservations: [],
+  humidityObservations: [],
   isLoading: true,
   errorMessage: '',
   lastUpdatedAt: '',
@@ -85,10 +87,15 @@ export function useLatestWeatherObservations({
           now: requestDate,
           aggregationHours: selectedTimespan.aggregationHours,
         })
+        const averageHumidityObservations = selectAverageRelativeHumidityByStation(parsedObservations, {
+          now: requestDate,
+          aggregationHours: selectedTimespan.aggregationHours,
+        })
 
         const nextState = {
           temperatureObservations: latestTemperatureObservations,
           rainfallObservations: aggregatedRainfallObservations,
+          humidityObservations: averageHumidityObservations,
           isLoading: false,
           errorMessage: '',
           lastUpdatedAt: requestedAt,
@@ -112,6 +119,7 @@ export function useLatestWeatherObservations({
         setState({
           temperatureObservations: cachedState.temperatureObservations,
           rainfallObservations: cachedState.rainfallObservations,
+          humidityObservations: cachedState.humidityObservations,
           isLoading: false,
           errorMessage:
             'Failed to refresh FMI weather observations. Showing latest available data.',
@@ -134,15 +142,18 @@ export function useLatestWeatherObservations({
   return useMemo(() => {
     const hasTemperatureData = state.temperatureObservations.length > 0
     const hasRainfallData = state.rainfallObservations.length > 0
+    const hasHumidityData = state.humidityObservations.length > 0
 
     return {
       ...state,
       hasTemperatureData,
       hasRainfallData,
+      hasHumidityData,
       isTemperatureEmpty: state.didLoadOnce && !state.isLoading && !state.errorMessage && !hasTemperatureData,
       isRainfallEmpty: state.didLoadOnce && !state.isLoading && !state.errorMessage && !hasRainfallData,
+      isHumidityEmpty: state.didLoadOnce && !state.isLoading && !state.errorMessage && !hasHumidityData,
       isErrorWithoutAnyData:
-        Boolean(state.errorMessage) && !hasTemperatureData && !hasRainfallData,
+        Boolean(state.errorMessage) && !hasTemperatureData && !hasRainfallData && !hasHumidityData,
       timespanKey: selectedTimespan.key,
       unitLabel: selectedTimespan.unitLabel,
       timespanLabel: selectedTimespan.label,

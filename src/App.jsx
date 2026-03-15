@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { HumidityLayerToggle } from './components/HumidityLayerToggle'
 import { RadarLayerToggle } from './components/RadarLayerToggle'
 import { RainfallLayerToggle } from './components/RainfallLayerToggle'
 import { RainfallTimespanToggle } from './components/RainfallTimespanToggle'
@@ -59,8 +60,9 @@ const TEMPERATURE_LABEL_LAYOUT = {
   'text-field': ['get', 'label'],
   'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
   'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11.5, 8, 13.5],
-  'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-  'text-radial-offset': 0.7,
+  'text-variable-anchor': ['top', 'bottom'],
+  'text-radial-offset': 0.9,
+  'text-padding': 0,
   'text-justify': 'auto',
   'text-allow-overlap': false,
   'text-ignore-placement': false,
@@ -74,8 +76,8 @@ const TEMPERATURE_LABEL_LAYER = {
   paint: {
     'text-color': '#350717',
     'text-halo-color': '#fbffef',
-    'text-halo-width': 3.0,
-    'text-halo-blur': 0.7,
+    'text-halo-width': 2.5,
+    'text-halo-blur': 0.5,
   },
 }
 
@@ -95,8 +97,9 @@ const RAINFALL_LABEL_LAYOUT = {
   'text-field': ['get', 'label'],
   'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
   'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 8, 13],
-  'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-  'text-radial-offset': 0.75,
+  'text-variable-anchor': ['top', 'bottom'],
+  'text-radial-offset': 0.9,
+  'text-padding': 0,
   'text-justify': 'auto',
   'text-allow-overlap': false,
   'text-ignore-placement': false,
@@ -110,6 +113,43 @@ const RAINFALL_LABEL_LAYER = {
   paint: {
     'text-color': '#064e3b',
     'text-halo-color': '#ecfdf5',
+    'text-halo-width': 2.5,
+    'text-halo-blur': 0.5,
+  },
+}
+
+const HUMIDITY_POINT_LAYER = {
+  id: 'humidity-point-layer',
+  type: 'circle',
+  source: 'humidity-source',
+  paint: {
+    'circle-radius': 3,
+    'circle-color': '#3730a3',
+    'circle-stroke-width': 1,
+    'circle-stroke-color': '#e0e7ff',
+  },
+}
+
+const HUMIDITY_LABEL_LAYOUT = {
+  'text-field': ['get', 'label'],
+  'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+  'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 8, 13],
+  'text-variable-anchor': ['left', 'right'],
+  'text-radial-offset': 0.9,
+  'text-padding': 0,
+  'text-justify': 'auto',
+  'text-allow-overlap': false,
+  'text-ignore-placement': false,
+}
+
+const HUMIDITY_LABEL_LAYER = {
+  id: 'humidity-label-layer',
+  type: 'symbol',
+  source: 'humidity-source',
+  layout: HUMIDITY_LABEL_LAYOUT,
+  paint: {
+    'text-color': '#1e1b4b',
+    'text-halo-color': '#eef2ff',
     'text-halo-width': 2.5,
     'text-halo-blur': 0.5,
   },
@@ -135,6 +175,11 @@ function formatRainfall(rainfallAmountMm, unitLabel) {
   return `${rounded.toFixed(1)} ${unitLabel}`
 }
 
+function formatHumidity(relativeHumidityPercent) {
+  const rounded = Math.round(relativeHumidityPercent * 10) / 10
+  return `${rounded.toFixed(1)} %`
+}
+
 function formatLastUpdatedAt(isoString) {
   if (!isoString) {
     return 'No successful updates yet'
@@ -156,6 +201,7 @@ function App() {
   const [isRadarLayerVisible, setIsRadarLayerVisible] = useState(false)
   const [isTemperatureLayerVisible, setIsTemperatureLayerVisible] = useState(true)
   const [isRainfallLayerVisible, setIsRainfallLayerVisible] = useState(true)
+  const [isHumidityLayerVisible, setIsHumidityLayerVisible] = useState(false)
   const [rainfallTimespanKey, setRainfallTimespanKey] = useState(DEFAULT_RAINFALL_TIMESPAN_KEY)
   const rainfallTimespanOptions = useMemo(
     () => [
@@ -168,10 +214,12 @@ function App() {
   const {
     temperatureObservations,
     rainfallObservations,
+    humidityObservations,
     errorMessage: weatherErrorMessage,
     isLoading: isWeatherLoading,
     isTemperatureEmpty,
     isRainfallEmpty,
+    isHumidityEmpty,
     isErrorWithoutAnyData,
     lastUpdatedAt: weatherLastUpdatedAt,
     unitLabel: rainfallUnitLabel,
@@ -196,6 +244,11 @@ function App() {
   const visibleRainfallObservations = useMemo(
     () => (isRainfallLayerVisible ? rainfallObservations : []),
     [isRainfallLayerVisible, rainfallObservations],
+  )
+
+  const visibleHumidityObservations = useMemo(
+    () => (isHumidityLayerVisible ? humidityObservations : []),
+    [humidityObservations, isHumidityLayerVisible],
   )
 
   const temperatureGeoJson = useMemo(
@@ -242,6 +295,28 @@ function App() {
     [rainfallUnitLabel, visibleRainfallObservations],
   )
 
+  const humidityGeoJson = useMemo(
+    () => ({
+      type: 'FeatureCollection',
+      features: visibleHumidityObservations.map((observation) => ({
+        type: 'Feature',
+        id: `${observation.stationId}-${observation.observedAtEpochMs}`,
+        geometry: {
+          type: 'Point',
+          coordinates: [observation.longitude, observation.latitude],
+        },
+        properties: {
+          stationId: observation.stationId,
+          stationName: observation.stationName,
+          observedAtIso: observation.observedAtIso,
+          relativeHumidityPercent: observation.relativeHumidityPercent,
+          label: formatHumidity(observation.relativeHumidityPercent),
+        },
+      })),
+    }),
+    [visibleHumidityObservations],
+  )
+
   useEffect(() => {
     if (!navigator.geolocation) {
       return
@@ -281,6 +356,7 @@ function App() {
     <main className="relative h-dvh w-full">
       <Map
         mapLib={maplibregl}
+        crossSourceCollisions
         longitude={viewState.longitude}
         latitude={viewState.latitude}
         zoom={viewState.zoom}
@@ -313,6 +389,12 @@ function App() {
             <Layer {...RAINFALL_LABEL_LAYER} />
           </Source>
         )}
+        {visibleHumidityObservations.length > 0 && (
+          <Source id="humidity-source" type="geojson" data={humidityGeoJson}>
+            <Layer {...HUMIDITY_POINT_LAYER} />
+            <Layer {...HUMIDITY_LABEL_LAYER} />
+          </Source>
+        )}
       </Map>
 
       <section className="pointer-events-none absolute left-3 top-3 z-10 space-y-2">
@@ -325,6 +407,10 @@ function App() {
             <RainfallLayerToggle
               isVisible={isRainfallLayerVisible}
               onToggle={() => setIsRainfallLayerVisible((visible) => !visible)}
+            />
+            <HumidityLayerToggle
+              isVisible={isHumidityLayerVisible}
+              onToggle={() => setIsHumidityLayerVisible((visible) => !visible)}
             />
             <RadarLayerToggle
               isVisible={isRadarLayerVisible}
@@ -375,6 +461,12 @@ function App() {
         {isRainfallEmpty && (
           <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
             No recent rainfall observations found in the selected window.
+          </div>
+        )}
+
+        {isHumidityEmpty && (
+          <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
+            No recent humidity observations found in the selected window.
           </div>
         )}
 

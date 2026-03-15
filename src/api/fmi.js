@@ -3,6 +3,7 @@ import {
   FINLAND_BBOX,
   FMI_RADAR_WMS_BASE_URL,
   FMI_RAINFALL_PARAMETER,
+  FMI_RELATIVE_HUMIDITY_PARAMETER,
   FMI_STORED_QUERY_ID,
   FMI_TEMPERATURE_PARAMETER,
   FMI_WFS_BASE_URL,
@@ -31,7 +32,7 @@ function floorToUtcHour(date) {
 }
 
 function getCombinedWeatherParameters() {
-  return `${FMI_TEMPERATURE_PARAMETER},${FMI_RAINFALL_PARAMETER}`
+  return `${FMI_TEMPERATURE_PARAMETER},${FMI_RAINFALL_PARAMETER},${FMI_RELATIVE_HUMIDITY_PARAMETER}`
 }
 
 export function buildLatestTemperatureRequestUrl(now = new Date()) {

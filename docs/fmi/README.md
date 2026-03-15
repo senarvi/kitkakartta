@@ -28,20 +28,20 @@ For requesting latest station temperatures, we use the `fmi::observations::weath
 
 `https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=helsinki`
 
-#### Fetching the latest temperature and rainfall observations
+#### Fetching the temperature, rainfall, and relative humidity observations
 
 Parameters that need to be set:
 
 - Limit results to Finland using `bbox=19,59,32,71` (lon,lat; EPSG:4326).
-- Request both air temperature and hourly rainfall with `parameters=t2m,r_1h`.
+- Request air temperature, hourly rainfall, and relative humidity with `parameters=t2m,r_1h,rh`.
 - Set `timestep` to 10. This means that we get observations every 10 minutes, starting from the start of the hour.
 - Set `starttime` to 15 minutes before the current time.
 
-`https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&bbox=19,59,32,71&parameters=t2m,r_1h&timestep=10&starttime=<starttime>`
+`https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&bbox=19,59,32,71&parameters=t2m,r_1h,rh&timestep=10&starttime=<starttime>`
 
-The example response in [weather_example.xml](weather_example.xml) uses a smaller bounding box to make the XML easier to inspect. In `<gmlcov:MultiPointCoverage>`, `<gmlcov:positions>` is a whitespace-separated sequence of 3-tuples (`latitude longitude unixTime`). `<gml:doubleOrNilReasonTupleList>` is the observation value list, where each item maps to one position tuple. With `parameters=t2m,r_1h`, each tuple has two values in that order: temperature first, then hourly rainfall.
+The example response in [weather_example.xml](weather_example.xml) uses a smaller bounding box to make the XML easier to inspect. In `<gmlcov:MultiPointCoverage>`, `<gmlcov:positions>` is a whitespace-separated sequence of 3-tuples (`latitude longitude unixTime`). `<gml:doubleOrNilReasonTupleList>` is the observation value list, where each item maps to one position tuple. With `parameters=t2m,r_1h,rh`, each tuple has three values in that order: temperature first, hourly rainfall second, and relative humidity third.
 
-Note: For 12h or 24h totals, we must request hourly rainfall (`r_1h`) over a wider time window and sum values per station in application logic.
+For each station, we show the last observed temperature. For 12h or 24h total rainfall, we must request hourly rainfall (`r_1h`) over the time window and sum values per station. For relative humidity, we take the average over the time window.
 
 ### Rainfall Radar Data
 

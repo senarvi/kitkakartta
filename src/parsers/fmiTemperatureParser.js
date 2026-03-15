@@ -194,7 +194,7 @@ export function parseRainfallObservationsXml(xmlText) {
 
 export function parseCombinedWeatherObservationsXml(xmlText) {
   return parseWeatherObservationsXml(xmlText, {
-    valuePropertyNames: ['temperatureC', 'rainfallAmount1hMm'],
+    valuePropertyNames: ['temperatureC', 'rainfallAmount1hMm', 'relativeHumidityPercent'],
   })
 }
 
@@ -269,6 +269,65 @@ export function selectAggregatedRainfallByStation(
     .map((observation) => ({
       ...observation,
       rainfallAmountMm: Math.round(observation.rainfallAmountMm * 10) / 10,
+    }))
+    .sort((left, right) => left.stationName.localeCompare(right.stationName, 'fi'))
+}
+
+export function selectAverageRelativeHumidityByStation(
+  observations,
+  { now = new Date(), aggregationHours = 1 } = {},
+) {
+  const windowMs = aggregationHours * 60 * 60 * 1000
+  const windowStartMs = now.getTime() - windowMs
+  const aggregatedByStation = new Map()
+
+  for (const observation of observations) {
+    if (observation.observedAtEpochMs < windowStartMs) {
+      continue
+    }
+
+    if (!Number.isFinite(observation.relativeHumidityPercent)) {
+      continue
+    }
+
+    const current = aggregatedByStation.get(observation.stationId)
+
+    if (!current) {
+      aggregatedByStation.set(observation.stationId, {
+        stationId: observation.stationId,
+        stationName: observation.stationName,
+        longitude: observation.longitude,
+        latitude: observation.latitude,
+        humidityValueSum: observation.relativeHumidityPercent,
+        humidityValueCount: 1,
+        observedAtEpochMs: observation.observedAtEpochMs,
+        observedAtIso: observation.observedAtIso,
+      })
+      continue
+    }
+
+    current.humidityValueSum += observation.relativeHumidityPercent
+    current.humidityValueCount += 1
+
+    if (observation.observedAtEpochMs > current.observedAtEpochMs) {
+      current.observedAtEpochMs = observation.observedAtEpochMs
+      current.observedAtIso = observation.observedAtIso
+      current.longitude = observation.longitude
+      current.latitude = observation.latitude
+      current.stationName = observation.stationName
+    }
+  }
+
+  return Array.from(aggregatedByStation.values())
+    .map((observation) => ({
+      stationId: observation.stationId,
+      stationName: observation.stationName,
+      longitude: observation.longitude,
+      latitude: observation.latitude,
+      relativeHumidityPercent:
+        Math.round((observation.humidityValueSum / observation.humidityValueCount) * 10) / 10,
+      observedAtEpochMs: observation.observedAtEpochMs,
+      observedAtIso: observation.observedAtIso,
     }))
     .sort((left, right) => left.stationName.localeCompare(right.stationName, 'fi'))
 }

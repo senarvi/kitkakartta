@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   parseCombinedWeatherObservationsXml,
   parseRainfallObservationsXml,
+  selectAverageRelativeHumidityByStation,
   selectAggregatedRainfallByStation,
   parseTemperatureObservationsXml,
   selectLatestTemperatureByStation,
@@ -65,7 +66,7 @@ const combinedValuesXml = `
     60.1 24.9 1700000000
   </gmlcov:positions>
   <gml:doubleOrNilReasonTupleList>
-    2.6 0.8
+    2.6 0.8 73.0
   </gml:doubleOrNilReasonTupleList>
 </wfs:FeatureCollection>
 `
@@ -84,7 +85,7 @@ const combinedWithMissingRainfallXml = `
     60.1 24.9 1700000000
   </gmlcov:positions>
   <gml:doubleOrNilReasonTupleList>
-    2.6 NaN
+    2.6 NaN 71.0
   </gml:doubleOrNilReasonTupleList>
 </wfs:FeatureCollection>
 `
@@ -194,6 +195,7 @@ describe('parseCombinedWeatherObservationsXml', () => {
       latitude: 60.1,
       temperatureC: 2.6,
       rainfallAmount1hMm: 0.8,
+      relativeHumidityPercent: 73.0,
     })
   })
 
@@ -203,6 +205,7 @@ describe('parseCombinedWeatherObservationsXml', () => {
     expect(observations).toHaveLength(1)
     expect(observations[0].temperatureC).toBe(2.6)
     expect(observations[0].rainfallAmount1hMm).toBeUndefined()
+    expect(observations[0].relativeHumidityPercent).toBe(71)
   })
 })
 
@@ -250,6 +253,55 @@ describe('selectAggregatedRainfallByStation', () => {
     expect(selected[0]).toMatchObject({
       stationId: '101',
       rainfallAmountMm: 3.5,
+      observedAtIso: '2026-03-15T11:00:00Z',
+    })
+  })
+})
+
+describe('selectAverageRelativeHumidityByStation', () => {
+  it('calculates humidity average over selected window per station', () => {
+    const now = new Date('2026-03-15T12:00:00Z')
+
+    const selected = selectAverageRelativeHumidityByStation(
+      [
+        {
+          stationId: '101',
+          stationName: 'A',
+          longitude: 24,
+          latitude: 60,
+          relativeHumidityPercent: 80,
+          observedAtEpochMs: Date.parse('2026-03-15T11:00:00Z'),
+          observedAtIso: '2026-03-15T11:00:00Z',
+        },
+        {
+          stationId: '101',
+          stationName: 'A',
+          longitude: 24,
+          latitude: 60,
+          relativeHumidityPercent: 70,
+          observedAtEpochMs: Date.parse('2026-03-15T10:00:00Z'),
+          observedAtIso: '2026-03-15T10:00:00Z',
+        },
+        {
+          stationId: '101',
+          stationName: 'A',
+          longitude: 24,
+          latitude: 60,
+          relativeHumidityPercent: 10,
+          observedAtEpochMs: Date.parse('2026-03-14T23:00:00Z'),
+          observedAtIso: '2026-03-14T23:00:00Z',
+        },
+      ],
+      {
+        now,
+        aggregationHours: 12,
+      },
+    )
+
+    expect(selected).toHaveLength(1)
+    expect(selected[0]).toMatchObject({
+      stationId: '101',
+      relativeHumidityPercent: 75,
       observedAtIso: '2026-03-15T11:00:00Z',
     })
   })

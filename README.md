@@ -4,7 +4,7 @@ Kitkakartta is a web tool that visualizes weather observations on a map of Finla
 
 The application can show:
 - Current temperature values at FMI measurement stations.
-- Rainfall amount for the selected period (1, 12, or 24) hours at each location.
+- Rainfall total and relative humidity average for the selected period (1, 12, or 24 hours) at each location.
 - Radar raster overlay that reflects the precipitation intensity during the same time period.
 
 Data is fetched from the Finnish Meteorological Institute (FMI) Open Data API.

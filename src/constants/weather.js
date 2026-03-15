@@ -2,6 +2,7 @@ export const FMI_WFS_BASE_URL = 'https://opendata.fmi.fi/wfs'
 export const FMI_STORED_QUERY_ID = 'fmi::observations::weather::multipointcoverage'
 export const FMI_TEMPERATURE_PARAMETER = 't2m'
 export const FMI_RAINFALL_PARAMETER = 'r_1h'
+export const FMI_RELATIVE_HUMIDITY_PARAMETER = 'rh'
 export const FMI_RADAR_WMS_BASE_URL = 'https://openwms.fmi.fi/geoserver/Radar/wms'
 
 export const RADAR_PRODUCT_BY_TIMESPAN_KEY = {
