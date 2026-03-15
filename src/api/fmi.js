@@ -1,13 +1,13 @@
 import {
+  DEFAULT_RAINFALL_TIMESPAN_KEY,
   FINLAND_BBOX,
-  FMI_RADAR_RR1H_STORED_QUERY_ID,
   FMI_RADAR_WMS_BASE_URL,
-  FMI_RADAR_WMS_LAYER_RR1H,
   FMI_RAINFALL_PARAMETER,
   FMI_STORED_QUERY_ID,
   FMI_TEMPERATURE_PARAMETER,
   FMI_WFS_BASE_URL,
   RADAR_REQUEST_LOOKBACK_HOURS,
+  RADAR_PRODUCT_BY_TIMESPAN_KEY,
   REQUEST_LOOKBACK_MINUTES,
   REQUEST_TIMESTEP_MINUTES,
 } from '../constants/weather'
@@ -90,7 +90,18 @@ export function buildLatestWeatherRequestUrl({ now = new Date(), aggregationHour
   return `${FMI_WFS_BASE_URL}?${params.toString()}`
 }
 
-export function buildRadarRr1hMetadataRequestUrl({ now = new Date() } = {}) {
+function resolveRadarProduct(timespanKey = DEFAULT_RAINFALL_TIMESPAN_KEY) {
+  return (
+    RADAR_PRODUCT_BY_TIMESPAN_KEY[timespanKey] ??
+    RADAR_PRODUCT_BY_TIMESPAN_KEY[DEFAULT_RAINFALL_TIMESPAN_KEY]
+  )
+}
+
+export function buildRadarMetadataRequestUrl({
+  now = new Date(),
+  timespanKey = DEFAULT_RAINFALL_TIMESPAN_KEY,
+} = {}) {
+  const radarProduct = resolveRadarProduct(timespanKey)
   const endTime = now
   const startTime = new Date(endTime.getTime() - RADAR_REQUEST_LOOKBACK_HOURS * 60 * 60 * 1000)
 
@@ -98,7 +109,7 @@ export function buildRadarRr1hMetadataRequestUrl({ now = new Date() } = {}) {
     service: 'WFS',
     version: '2.0.0',
     request: 'getFeature',
-    storedquery_id: FMI_RADAR_RR1H_STORED_QUERY_ID,
+    storedquery_id: radarProduct.storedQueryId,
     bbox: `${FINLAND_BBOX.minLon},${FINLAND_BBOX.minLat},${FINLAND_BBOX.maxLon},${FINLAND_BBOX.maxLat},epsg::4326`,
     starttime: toUtcIsoWithoutMilliseconds(startTime),
     endtime: toUtcIsoWithoutMilliseconds(endTime),
@@ -107,12 +118,16 @@ export function buildRadarRr1hMetadataRequestUrl({ now = new Date() } = {}) {
   return `${FMI_WFS_BASE_URL}?${params.toString()}`
 }
 
-export function buildRadarRr1hWmsTileUrl({ timeIso }) {
+export function buildRadarWmsTileUrl({
+  timeIso,
+  timespanKey = DEFAULT_RAINFALL_TIMESPAN_KEY,
+} = {}) {
+  const radarProduct = resolveRadarProduct(timespanKey)
   const params = [
     'service=WMS',
     'version=1.3.0',
     'request=GetMap',
-    `layers=${encodeURIComponent(FMI_RADAR_WMS_LAYER_RR1H)}`,
+    `layers=${encodeURIComponent(radarProduct.wmsLayer)}`,
     'styles=',
     'transparent=true',
     'format=image/png',
@@ -172,8 +187,15 @@ export async function fetchLatestWeatherXml({
   }
 }
 
-export async function fetchLatestRadarRr1hMetadataXml({ signal, now = new Date() } = {}) {
-  const url = buildRadarRr1hMetadataRequestUrl({ now })
+export async function fetchLatestRadarMetadataXml({
+  signal,
+  now = new Date(),
+  timespanKey = DEFAULT_RAINFALL_TIMESPAN_KEY,
+} = {}) {
+  const url = buildRadarMetadataRequestUrl({
+    now,
+    timespanKey,
+  })
   const response = await fetch(url, { signal })
 
   if (!response.ok) {

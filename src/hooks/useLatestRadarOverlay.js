@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  buildRadarRr1hWmsTileUrl,
-  fetchLatestRadarRr1hMetadataXml,
+  buildRadarWmsTileUrl,
+  fetchLatestRadarMetadataXml,
 } from '../api/fmi'
-import { POLL_INTERVAL_MS } from '../constants/weather'
+import { DEFAULT_RAINFALL_TIMESPAN_KEY, POLL_INTERVAL_MS } from '../constants/weather'
 import { parseRadarCompositeMetadataXml } from '../parsers/fmiRadarParser'
 
 const INITIAL_STATE = {
@@ -14,7 +14,7 @@ const INITIAL_STATE = {
   didLoadOnce: false,
 }
 
-export function useLatestRadarOverlay() {
+export function useLatestRadarOverlay({ timespanKey = DEFAULT_RAINFALL_TIMESPAN_KEY } = {}) {
   const [state, setState] = useState(INITIAL_STATE)
   const lastSuccessfulStateRef = useRef(INITIAL_STATE)
 
@@ -34,8 +34,9 @@ export function useLatestRadarOverlay() {
       }))
 
       try {
-        const { xmlText } = await fetchLatestRadarRr1hMetadataXml({
+        const { xmlText } = await fetchLatestRadarMetadataXml({
           signal: controller.signal,
+          timespanKey,
         })
 
         if (isDisposed || controller.signal.aborted) {
@@ -43,8 +44,9 @@ export function useLatestRadarOverlay() {
         }
 
         const { resultTimeIso } = parseRadarCompositeMetadataXml(xmlText)
-        const tileUrl = buildRadarRr1hWmsTileUrl({
+        const tileUrl = buildRadarWmsTileUrl({
           timeIso: resultTimeIso,
+          timespanKey,
         })
 
         const nextState = {
@@ -82,7 +84,7 @@ export function useLatestRadarOverlay() {
       activeController?.abort()
       window.clearInterval(intervalId)
     }
-  }, [])
+  }, [timespanKey])
 
   return useMemo(() => {
     const hasData = Boolean(state.tileUrl)

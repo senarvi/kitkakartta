@@ -110,7 +110,7 @@ const RAINFALL_LABEL_LAYER = {
   paint: {
     'text-color': '#064e3b',
     'text-halo-color': '#ecfdf5',
-    'text-halo-width': 2.6,
+    'text-halo-width': 2.5,
     'text-halo-blur': 0.5,
   },
 }
@@ -120,7 +120,7 @@ const RADAR_RASTER_LAYER = {
   type: 'raster',
   source: 'radar-source',
   paint: {
-    'raster-opacity': 0.26,
+    'raster-opacity': 0.3,
     'raster-resampling': 'linear',
   },
 }
@@ -184,7 +184,9 @@ function App() {
     errorMessage: radarErrorMessage,
     isErrorWithoutData: isRadarErrorWithoutData,
     hasData: hasRadarData,
-  } = useLatestRadarOverlay()
+  } = useLatestRadarOverlay({
+    timespanKey: rainfallTimespanKey,
+  })
 
   const visibleTemperatureObservations = useMemo(
     () => (isTemperatureLayerVisible ? temperatureObservations : []),

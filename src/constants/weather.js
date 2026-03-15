@@ -1,10 +1,23 @@
 export const FMI_WFS_BASE_URL = 'https://opendata.fmi.fi/wfs'
 export const FMI_STORED_QUERY_ID = 'fmi::observations::weather::multipointcoverage'
-export const FMI_RADAR_RR1H_STORED_QUERY_ID = 'fmi::radar::composite::rr1h'
 export const FMI_TEMPERATURE_PARAMETER = 't2m'
 export const FMI_RAINFALL_PARAMETER = 'r_1h'
 export const FMI_RADAR_WMS_BASE_URL = 'https://openwms.fmi.fi/geoserver/Radar/wms'
-export const FMI_RADAR_WMS_LAYER_RR1H = 'Radar:suomi_rr1h_eureffin'
+
+export const RADAR_PRODUCT_BY_TIMESPAN_KEY = {
+  '1h': {
+    storedQueryId: 'fmi::radar::composite::rr1h',
+    wmsLayer: 'Radar:suomi_rr1h_eureffin',
+  },
+  '12h': {
+    storedQueryId: 'fmi::radar::composite::rr12h',
+    wmsLayer: 'Radar:suomi_rr12h_eureffin',
+  },
+  '24h': {
+    storedQueryId: 'fmi::radar::composite::rr24h',
+    wmsLayer: 'Radar:suomi_rr24h_eureffin',
+  },
+}
 
 export const RAINFALL_TIMESPAN_OPTIONS = {
   '1h': {
