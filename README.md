@@ -29,6 +29,18 @@ Run linting:
 npm run lint
 ```
 
+Run tests:
+
+```bash
+npm run test
+```
+
+Run tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
 Build for production:
 
 ```bash
@@ -40,6 +52,11 @@ Preview the production build:
 ```bash
 npm run preview
 ```
+
+Git hooks are configured with Husky:
+
+- `pre-commit`: runs `lint-staged` (`eslint --fix` for staged source/config files).
+- `pre-push`: runs `npm run test`.
 
 ## Deployment
 

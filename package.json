@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "dependencies": {
     "maplibre-gl": "^5.20.1",
@@ -28,10 +29,23 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.0",
+    "lint-staged": "^16.4.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "vite": "^8.0.0",
     "vitest": "^4.1.0"
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx}": [
+      "eslint --fix"
+    ],
+    "vite.config.js": [
+      "eslint --fix"
+    ],
+    "eslint.config.js": [
+      "eslint --fix"
+    ]
   }
 }
