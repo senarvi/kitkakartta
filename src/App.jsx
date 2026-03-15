@@ -1,9 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Map, { Layer, Source } from 'react-map-gl/maplibre'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { RainfallLayerToggle } from './components/RainfallLayerToggle'
+import { RainfallTimespanToggle } from './components/RainfallTimespanToggle'
 import { TemperatureLayerToggle } from './components/TemperatureLayerToggle'
-import { FINLAND_BOUNDS } from './constants/weather'
+import {
+  DEFAULT_RAINFALL_TIMESPAN_KEY,
+  FINLAND_BOUNDS,
+  RAINFALL_TIMESPAN_OPTIONS,
+} from './constants/weather'
+import { useLatestRainfall } from './hooks/useLatestRainfall'
 import { useLatestTemperatures } from './hooks/useLatestTemperatures'
 
 const OSM_RASTER_STYLE = {
@@ -26,6 +33,14 @@ const OSM_RASTER_STYLE = {
     },
   ],
 }
+
+const DEFAULT_VIEW_STATE = {
+  longitude: 25,
+  latitude: 60.6,
+  zoom: 6.2,
+}
+
+const USER_LOCATION_DEFAULT_ZOOM = 7
 
 const TEMPERATURE_POINT_LAYER = {
   id: 'temperature-point-layer',
@@ -63,9 +78,50 @@ const TEMPERATURE_LABEL_LAYER = {
   },
 }
 
+const RAINFALL_POINT_LAYER = {
+  id: 'rainfall-point-layer',
+  type: 'circle',
+  source: 'rainfall-source',
+  paint: {
+    'circle-radius': 3,
+    'circle-color': '#14532d',
+    'circle-stroke-width': 1,
+    'circle-stroke-color': '#dcfce7',
+  },
+}
+
+const RAINFALL_LABEL_LAYOUT = {
+  'text-field': ['get', 'label'],
+  'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+  'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 8, 13],
+  'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+  'text-radial-offset': 0.75,
+  'text-justify': 'auto',
+  'text-allow-overlap': false,
+  'text-ignore-placement': false,
+}
+
+const RAINFALL_LABEL_LAYER = {
+  id: 'rainfall-label-layer',
+  type: 'symbol',
+  source: 'rainfall-source',
+  layout: RAINFALL_LABEL_LAYOUT,
+  paint: {
+    'text-color': '#064e3b',
+    'text-halo-color': '#ecfdf5',
+    'text-halo-width': 2.6,
+    'text-halo-blur': 0.5,
+  },
+}
+
 function formatTemperature(temperatureC) {
   const rounded = Math.round(temperatureC * 10) / 10
   return `${rounded.toFixed(1)} °C`
+}
+
+function formatRainfall(rainfallAmountMm, unitLabel) {
+  const rounded = Math.round(rainfallAmountMm * 10) / 10
+  return `${rounded.toFixed(1)} ${unitLabel}`
 }
 
 function formatLastUpdatedAt(isoString) {
@@ -85,25 +141,52 @@ function formatLastUpdatedAt(isoString) {
 }
 
 function App() {
+  const [viewState, setViewState] = useState(DEFAULT_VIEW_STATE)
   const [isTemperatureLayerVisible, setIsTemperatureLayerVisible] = useState(true)
+  const [isRainfallLayerVisible, setIsRainfallLayerVisible] = useState(true)
+  const [rainfallTimespanKey, setRainfallTimespanKey] = useState(DEFAULT_RAINFALL_TIMESPAN_KEY)
+  const rainfallTimespanOptions = useMemo(
+    () => [
+      RAINFALL_TIMESPAN_OPTIONS['1h'],
+      RAINFALL_TIMESPAN_OPTIONS['12h'],
+      RAINFALL_TIMESPAN_OPTIONS['24h'],
+    ],
+    [],
+  )
   const {
-    observations,
-    errorMessage,
-    isLoading,
-    isEmpty,
-    isErrorWithoutData,
-    lastUpdatedAt,
+    observations: temperatureObservations,
+    errorMessage: temperatureErrorMessage,
+    isLoading: isTemperatureLoading,
+    isEmpty: isTemperatureEmpty,
+    isErrorWithoutData: isTemperatureErrorWithoutData,
+    lastUpdatedAt: temperatureLastUpdatedAt,
   } = useLatestTemperatures()
+  const {
+    observations: rainfallObservations,
+    errorMessage: rainfallErrorMessage,
+    isLoading: isRainfallLoading,
+    isEmpty: isRainfallEmpty,
+    isErrorWithoutData: isRainfallErrorWithoutData,
+    lastUpdatedAt: rainfallLastUpdatedAt,
+    unitLabel: rainfallUnitLabel,
+  } = useLatestRainfall({
+    timespanKey: rainfallTimespanKey,
+  })
 
-  const visibleObservations = useMemo(
-    () => (isTemperatureLayerVisible ? observations : []),
-    [isTemperatureLayerVisible, observations],
+  const visibleTemperatureObservations = useMemo(
+    () => (isTemperatureLayerVisible ? temperatureObservations : []),
+    [isTemperatureLayerVisible, temperatureObservations],
+  )
+
+  const visibleRainfallObservations = useMemo(
+    () => (isRainfallLayerVisible ? rainfallObservations : []),
+    [isRainfallLayerVisible, rainfallObservations],
   )
 
   const temperatureGeoJson = useMemo(
     () => ({
       type: 'FeatureCollection',
-      features: visibleObservations.map((observation) => ({
+      features: visibleTemperatureObservations.map((observation) => ({
         type: 'Feature',
         id: `${observation.stationId}-${observation.observedAtEpochMs}`,
         geometry: {
@@ -119,18 +202,74 @@ function App() {
         },
       })),
     }),
-    [visibleObservations],
+    [visibleTemperatureObservations],
   )
+
+  const rainfallGeoJson = useMemo(
+    () => ({
+      type: 'FeatureCollection',
+      features: visibleRainfallObservations.map((observation) => ({
+        type: 'Feature',
+        id: `${observation.stationId}-${observation.observedAtEpochMs}`,
+        geometry: {
+          type: 'Point',
+          coordinates: [observation.longitude, observation.latitude],
+        },
+        properties: {
+          stationId: observation.stationId,
+          stationName: observation.stationName,
+          observedAtIso: observation.observedAtIso,
+          rainfallAmountMm: observation.rainfallAmountMm,
+          label: formatRainfall(observation.rainfallAmountMm, rainfallUnitLabel),
+        },
+      })),
+    }),
+    [rainfallUnitLabel, visibleRainfallObservations],
+  )
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      return
+    }
+
+    let isCancelled = false
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (isCancelled) {
+          return
+        }
+
+        setViewState((previousViewState) => ({
+          ...previousViewState,
+          longitude: position.coords.longitude,
+          latitude: position.coords.latitude,
+          zoom: Math.max(previousViewState.zoom, USER_LOCATION_DEFAULT_ZOOM),
+        }))
+      },
+      () => {
+        // Keep default Finland-centered view when geolocation is denied or unavailable.
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 5 * 60 * 1000,
+      },
+    )
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   return (
     <main className="relative h-dvh w-full">
       <Map
         mapLib={maplibregl}
-        initialViewState={{
-          longitude: 26,
-          latitude: 64.5,
-          zoom: 4.6,
-        }}
+        longitude={viewState.longitude}
+        latitude={viewState.latitude}
+        zoom={viewState.zoom}
+        onMove={(event) => setViewState(event.viewState)}
         mapStyle={OSM_RASTER_STYLE}
         maxBounds={FINLAND_BOUNDS}
         minZoom={4}
@@ -142,10 +281,16 @@ function App() {
         reuseMaps
         style={{ width: '100%', height: '100%' }}
       >
-        {visibleObservations.length > 0 && (
+        {visibleTemperatureObservations.length > 0 && (
           <Source id="temperature-source" type="geojson" data={temperatureGeoJson}>
             <Layer {...TEMPERATURE_POINT_LAYER} />
             <Layer {...TEMPERATURE_LABEL_LAYER} />
+          </Source>
+        )}
+        {visibleRainfallObservations.length > 0 && (
+          <Source id="rainfall-source" type="geojson" data={rainfallGeoJson}>
+            <Layer {...RAINFALL_POINT_LAYER} />
+            <Layer {...RAINFALL_LABEL_LAYER} />
           </Source>
         )}
       </Map>
@@ -154,38 +299,77 @@ function App() {
         <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between gap-3">
             <h1 className="m-0 text-sm font-semibold text-slate-900">FMI Station Temperature</h1>
-            <TemperatureLayerToggle
-              isVisible={isTemperatureLayerVisible}
-              onToggle={() => setIsTemperatureLayerVisible((visible) => !visible)}
-            />
+            <div className="flex items-center gap-2">
+              <TemperatureLayerToggle
+                isVisible={isTemperatureLayerVisible}
+                onToggle={() => setIsTemperatureLayerVisible((visible) => !visible)}
+              />
+              <RainfallLayerToggle
+                isVisible={isRainfallLayerVisible}
+                onToggle={() => setIsRainfallLayerVisible((visible) => !visible)}
+              />
+            </div>
           </div>
           <p className="mt-2 text-xs text-slate-700">
-            Last updated: <span className="font-medium">{formatLastUpdatedAt(lastUpdatedAt)}</span>
+            Temperature updated:{' '}
+            <span className="font-medium">{formatLastUpdatedAt(temperatureLastUpdatedAt)}</span>
           </p>
-          <p className="mt-1 text-xs text-slate-700">Unit: °C</p>
+          <p className="mt-1 text-xs text-slate-700">
+            Rainfall updated:{' '}
+            <span className="font-medium">{formatLastUpdatedAt(rainfallLastUpdatedAt)}</span>
+          </p>
+          <RainfallTimespanToggle
+            selectedKey={rainfallTimespanKey}
+            options={rainfallTimespanOptions}
+            onSelect={setRainfallTimespanKey}
+          />
         </div>
 
-        {isLoading && (
+        {isTemperatureLoading && (
           <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
-            Loading latest observations...
+            Loading latest temperature observations...
           </div>
         )}
 
-        {errorMessage && !isErrorWithoutData && (
+        {isRainfallLoading && (
+          <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
+            Loading latest rainfall observations...
+          </div>
+        )}
+
+        {temperatureErrorMessage && !isTemperatureErrorWithoutData && (
           <div className="pointer-events-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-sm text-amber-900 shadow-sm backdrop-blur">
-            {errorMessage}
+            {temperatureErrorMessage}
           </div>
         )}
 
-        {isEmpty && (
+        {rainfallErrorMessage && !isRainfallErrorWithoutData && (
+          <div className="pointer-events-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-sm text-amber-900 shadow-sm backdrop-blur">
+            {rainfallErrorMessage}
+          </div>
+        )}
+
+        {isTemperatureEmpty && (
           <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
-            No recent observations found in the current time window.
+            No recent temperature observations found in the current time window.
           </div>
         )}
 
-        {isErrorWithoutData && (
+        {isRainfallEmpty && (
+          <div className="pointer-events-auto rounded-lg border border-slate-200 bg-white/90 p-3 text-sm text-slate-800 shadow-sm backdrop-blur">
+            No recent rainfall observations found in the selected window.
+          </div>
+        )}
+
+        {isTemperatureErrorWithoutData && (
           <div className="pointer-events-auto rounded-lg border border-rose-300 bg-rose-50/95 p-3 text-sm text-rose-900 shadow-sm backdrop-blur">
             Unable to load temperature observations right now.
+          </div>
+        )}
+
+        {isRainfallErrorWithoutData && (
+          <div className="pointer-events-auto rounded-lg border border-rose-300 bg-rose-50/95 p-3 text-sm text-rose-900 shadow-sm backdrop-blur">
+            Unable to load rainfall observations right now.
           </div>
         )}
       </section>

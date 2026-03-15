@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
+  parseRainfallObservationsXml,
+  selectAggregatedRainfallByStation,
   parseTemperatureObservationsXml,
   selectLatestTemperatureByStation,
 } from './fmiTemperatureParser'
@@ -119,6 +121,70 @@ describe('selectLatestTemperatureByStation', () => {
     expect(selected[0]).toMatchObject({
       stationId: '101',
       temperatureC: 2,
+    })
+  })
+})
+
+describe('parseRainfallObservationsXml', () => {
+  it('parses rainfall observations from FMI multipoint coverage XML', () => {
+    const observations = parseRainfallObservationsXml(minimalXml)
+
+    expect(observations).toHaveLength(1)
+    expect(observations[0]).toMatchObject({
+      stationId: '123',
+      stationName: 'Test Station',
+      longitude: 24.9,
+      latitude: 60.1,
+      rainfallAmount1hMm: 2.6,
+    })
+  })
+})
+
+describe('selectAggregatedRainfallByStation', () => {
+  it('aggregates hourly rainfall for the selected window per station', () => {
+    const now = new Date('2026-03-15T12:00:00Z')
+
+    const selected = selectAggregatedRainfallByStation(
+      [
+        {
+          stationId: '101',
+          stationName: 'A',
+          longitude: 24,
+          latitude: 60,
+          rainfallAmount1hMm: 1.2,
+          observedAtEpochMs: Date.parse('2026-03-15T11:00:00Z'),
+          observedAtIso: '2026-03-15T11:00:00Z',
+        },
+        {
+          stationId: '101',
+          stationName: 'A',
+          longitude: 24,
+          latitude: 60,
+          rainfallAmount1hMm: 2.3,
+          observedAtEpochMs: Date.parse('2026-03-15T10:00:00Z'),
+          observedAtIso: '2026-03-15T10:00:00Z',
+        },
+        {
+          stationId: '101',
+          stationName: 'A',
+          longitude: 24,
+          latitude: 60,
+          rainfallAmount1hMm: 9.9,
+          observedAtEpochMs: Date.parse('2026-03-14T23:00:00Z'),
+          observedAtIso: '2026-03-14T23:00:00Z',
+        },
+      ],
+      {
+        now,
+        aggregationHours: 12,
+      },
+    )
+
+    expect(selected).toHaveLength(1)
+    expect(selected[0]).toMatchObject({
+      stationId: '101',
+      rainfallAmountMm: 3.5,
+      observedAtIso: '2026-03-15T11:00:00Z',
     })
   })
 })

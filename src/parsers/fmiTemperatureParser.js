@@ -94,7 +94,7 @@ function parseStationMetadata(doc) {
   }
 }
 
-export function parseTemperatureObservationsXml(xmlText) {
+function parseWeatherObservationsXml(xmlText, { valuePropertyName }) {
   const xmlDoc = new DOMParser().parseFromString(xmlText, 'text/xml')
   const parserErrorNode = xmlDoc.querySelector('parsererror')
 
@@ -121,13 +121,13 @@ export function parseTemperatureObservationsXml(xmlText) {
 
     for (let index = 0; index < tupleCount; index += 1) {
       const tuple = tuples[index]
-      const temperatureC = Number(values[index])
+      const measurementValue = Number(values[index])
 
       if (!Number.isFinite(tuple.latitude) || !Number.isFinite(tuple.longitude)) {
         continue
       }
 
-      if (!Number.isFinite(tuple.unixTimeSeconds) || !Number.isFinite(temperatureC)) {
+      if (!Number.isFinite(tuple.unixTimeSeconds) || !Number.isFinite(measurementValue)) {
         continue
       }
 
@@ -147,7 +147,7 @@ export function parseTemperatureObservationsXml(xmlText) {
         // Internal convention is always longitude, latitude.
         longitude: tuple.longitude,
         latitude: tuple.latitude,
-        temperatureC,
+        [valuePropertyName]: measurementValue,
         observedAtEpochMs,
         observedAtIso: new Date(observedAtEpochMs).toISOString(),
       })
@@ -155,6 +155,18 @@ export function parseTemperatureObservationsXml(xmlText) {
   }
 
   return observations
+}
+
+export function parseTemperatureObservationsXml(xmlText) {
+  return parseWeatherObservationsXml(xmlText, {
+    valuePropertyName: 'temperatureC',
+  })
+}
+
+export function parseRainfallObservationsXml(xmlText) {
+  return parseWeatherObservationsXml(xmlText, {
+    valuePropertyName: 'rainfallAmount1hMm',
+  })
 }
 
 export function selectLatestTemperatureByStation(
@@ -174,5 +186,56 @@ export function selectLatestTemperatureByStation(
 
   return Array.from(latestByStationId.values())
     .filter((observation) => nowMs - observation.observedAtEpochMs <= staleThresholdMs)
+    .sort((left, right) => left.stationName.localeCompare(right.stationName, 'fi'))
+}
+
+export function selectAggregatedRainfallByStation(
+  observations,
+  { now = new Date(), aggregationHours = 1 } = {},
+) {
+  const windowMs = aggregationHours * 60 * 60 * 1000
+  const windowStartMs = now.getTime() - windowMs
+  const aggregatedByStation = new Map()
+
+  for (const observation of observations) {
+    if (observation.observedAtEpochMs < windowStartMs) {
+      continue
+    }
+
+    if (!Number.isFinite(observation.rainfallAmount1hMm)) {
+      continue
+    }
+
+    const current = aggregatedByStation.get(observation.stationId)
+
+    if (!current) {
+      aggregatedByStation.set(observation.stationId, {
+        stationId: observation.stationId,
+        stationName: observation.stationName,
+        longitude: observation.longitude,
+        latitude: observation.latitude,
+        rainfallAmountMm: observation.rainfallAmount1hMm,
+        observedAtEpochMs: observation.observedAtEpochMs,
+        observedAtIso: observation.observedAtIso,
+      })
+      continue
+    }
+
+    current.rainfallAmountMm += observation.rainfallAmount1hMm
+
+    if (observation.observedAtEpochMs > current.observedAtEpochMs) {
+      current.observedAtEpochMs = observation.observedAtEpochMs
+      current.observedAtIso = observation.observedAtIso
+      current.longitude = observation.longitude
+      current.latitude = observation.latitude
+      current.stationName = observation.stationName
+    }
+  }
+
+  return Array.from(aggregatedByStation.values())
+    .map((observation) => ({
+      ...observation,
+      rainfallAmountMm: Math.round(observation.rainfallAmountMm * 10) / 10,
+    }))
     .sort((left, right) => left.stationName.localeCompare(right.stationName, 'fi'))
 }
